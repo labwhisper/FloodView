@@ -6,7 +6,9 @@ import android.util.Base64
 import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +20,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -29,7 +33,9 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.labwhisper.floodview.date.DateSelectorWidget
 import com.labwhisper.floodview.flooddata.FloodData
+import java.time.LocalDate
 
 @Composable
 fun FloodMapScreen(
@@ -51,7 +57,7 @@ fun FloodMapScreen(
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
-                properties = MapProperties(mapType = MapType.SATELLITE),
+                properties = MapProperties(mapType = MapType.HYBRID),
                 uiSettings = MapUiSettings(compassEnabled = true, zoomControlsEnabled = true),
                 onMapLoaded = {
                     mapLoaded = true
@@ -85,6 +91,14 @@ fun FloodMapScreen(
                 )
             }
         }
+        DateSelectorWidget(
+            initialDate = LocalDate.now(),
+            onDateChange = { date ->
+                Log.w("KXK", "Date changed to: $date")
+                viewModel.updateDate(date)
+            }
+        )
+        Spacer(modifier = Modifier.height(20.dp))
     }
 
     LaunchedEffect(mapLoaded) {
@@ -129,5 +143,14 @@ fun convertBoundsToCoordinates(bounds: LatLngBounds): List<List<Double>> {
         listOf(bounds.northeast.longitude, bounds.northeast.latitude),
         listOf(bounds.southwest.longitude, bounds.northeast.latitude),
         listOf(bounds.southwest.longitude, bounds.southwest.latitude)
+    )
+}
+
+@Composable
+@Preview
+fun FloodMapScreenPreview() {
+    FloodMapScreen(
+        viewModel = FloodDetectionViewModel(),
+        floodData = FloodData.Loading
     )
 }

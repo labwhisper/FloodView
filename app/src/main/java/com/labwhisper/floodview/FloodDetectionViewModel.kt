@@ -6,12 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
+import com.labwhisper.floodview.date.convertToDateTimeString
 import com.labwhisper.floodview.flooddata.FloodData
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import kotlin.coroutines.cancellation.CancellationException
 
 class FloodDetectionViewModel : ViewModel() {
@@ -21,8 +23,7 @@ class FloodDetectionViewModel : ViewModel() {
     // near Wroclaw
     val initialPosition = LatLng(51.1107, 17.0326)
     private var currentCoordinates: List<List<Double>> = emptyList()
-    private var startDate = "2024-09-01T00:00:00Z"
-    private var endDate = "2024-09-20T23:59:59Z"
+    private var endDate: LocalDate = LocalDate.now()
 
     private var activeJob: Job? = null
 
@@ -31,9 +32,8 @@ class FloodDetectionViewModel : ViewModel() {
         getFloodDetection()
     }
 
-    fun updateDateRange(start: String, end: String) {
-        startDate = start
-        endDate = end
+    fun updateDate(endDate: LocalDate) {
+        this.endDate = endDate
         getFloodDetection()
     }
 
@@ -46,8 +46,8 @@ class FloodDetectionViewModel : ViewModel() {
                 val floodDetectionRequest = FloodDetectionRequest(
                     coordinates = currentCoordinates,
                     timeRange = TimeRange(
-                        from = startDate,
-                        to = endDate
+                        from = convertToDateTimeString(endDate.minusDays(6)),
+                        to = convertToDateTimeString(endDate)
                     )
                 )
                 delay(200)
@@ -84,7 +84,7 @@ class FloodDetectionViewModel : ViewModel() {
     }
 
 
-    fun parseFloodResponseBody(bodyString: String): FloodResponseBody {
+    private fun parseFloodResponseBody(bodyString: String): FloodResponseBody {
         return try {
             Gson().fromJson(bodyString, FloodResponseBody::class.java)
         } catch (e: JsonSyntaxException) {
@@ -92,5 +92,6 @@ class FloodDetectionViewModel : ViewModel() {
             FloodResponseBody(message = "Error parsing response", image_data = "")
         }
     }
+
 
 }
