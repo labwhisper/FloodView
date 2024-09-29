@@ -160,7 +160,7 @@ private fun SelectorRow(
                         .clickable {
                             coroutineScope.launch {
                                 onItemSelected(index)
-                                listState.centerItem(index)
+                                listState.centerItem(index + bufferSpace)
                             }
                         }
                 )
