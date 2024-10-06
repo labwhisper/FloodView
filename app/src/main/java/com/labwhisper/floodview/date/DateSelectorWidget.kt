@@ -132,21 +132,25 @@ fun DateSelectorWidget(
                 if (centeredMonthIndex in monthRangeWithDummies.indices) {
                     val newMonthWithYear = monthRangeWithDummies[centeredMonthIndex]
                     if (newMonthWithYear != null) {
-                        val newDate = selectedDate.withYear(newMonthWithYear.year)
-                            .withMonth(newMonthWithYear.month.value)
-                        if (newDate <= endDate) {
+                        val newDate = adjustDate(
+                            year = newMonthWithYear.year,
+                            month = newMonthWithYear.month,
+                            selectedDay = selectedDate.dayOfMonth,
+                            endDate = endDate
+                        )
+                        if (newDate != selectedDate) {
                             selectedDate = newDate
                             onDateChange(newDate)
-                            isProgrammaticScroll = true
-                            try {
-                                val dayIndex =
-                                    dateRangeWithDummies.indexOfFirst { it?.isEqual(newDate) == true }
-                                dayListState.centerItem(
-                                    dayIndex,
-                                    with(density) { dayItemWidthDp.toPx().toInt() })
-                            } finally {
-                                isProgrammaticScroll = false
-                            }
+                        }
+                        isProgrammaticScroll = true
+                        try {
+                            val dayIndex =
+                                dateRangeWithDummies.indexOfFirst { it?.isEqual(newDate) == true }
+                            dayListState.centerItem(
+                                dayIndex,
+                                with(density) { dayItemWidthDp.toPx().toInt() })
+                        } finally {
+                            isProgrammaticScroll = false
                         }
                     }
                 }
@@ -177,22 +181,26 @@ fun DateSelectorWidget(
             onItemSelected = { index ->
                 val newMonthWithYear = monthRangeWithDummies[index]
                 if (newMonthWithYear != null) {
-                    val newDate = selectedDate.withYear(newMonthWithYear.year)
-                        .withMonth(newMonthWithYear.month.value)
-                    if (newDate <= endDate) {
+                    val newDate = adjustDate(
+                        year = newMonthWithYear.year,
+                        month = newMonthWithYear.month,
+                        selectedDay = selectedDate.dayOfMonth,
+                        endDate = endDate
+                    )
+                    if (newDate != selectedDate) {
                         selectedDate = newDate
                         onDateChange(newDate)
-                        coroutineScope.launch {
-                            isProgrammaticScroll = true
-                            try {
-                                val dayIndex =
-                                    dateRangeWithDummies.indexOfFirst { it?.isEqual(newDate) == true }
-                                dayListState.centerItem(
-                                    dayIndex,
-                                    with(density) { dayItemWidthDp.toPx().toInt() })
-                            } finally {
-                                isProgrammaticScroll = false
-                            }
+                    }
+                    coroutineScope.launch {
+                        isProgrammaticScroll = true
+                        try {
+                            val dayIndex =
+                                dateRangeWithDummies.indexOfFirst { it?.isEqual(newDate) == true }
+                            dayListState.centerItem(
+                                dayIndex,
+                                with(density) { dayItemWidthDp.toPx().toInt() })
+                        } finally {
+                            isProgrammaticScroll = false
                         }
                     }
                 }
@@ -281,6 +289,23 @@ suspend fun LazyListState.centerItem(index: Int, itemWidth: Int) {
     }
     val offset = (parentWidth - itemWidth) / 2
     scrollToItem(index, scrollOffset = -offset)
+}
+
+private fun adjustDate(year: Int, month: Month, selectedDay: Int, endDate: LocalDate): LocalDate {
+    val lastDayOfMonth = YearMonth.of(year, month).lengthOfMonth()
+    val day = minOf(selectedDay, lastDayOfMonth)
+    var adjustedDate = LocalDate.of(year, month, day)
+    if (adjustedDate > endDate) {
+        adjustedDate = if (YearMonth.from(endDate) == YearMonth.of(year, month)) {
+            endDate
+        } else {
+            LocalDate.of(year, month, lastDayOfMonth)
+        }
+        if (adjustedDate > endDate) {
+            adjustedDate = endDate
+        }
+    }
+    return adjustedDate
 }
 
 @Composable
